@@ -1,4 +1,8 @@
-# SOAR-AI
+# PhantomGuard
+
+![CI](https://github.com/abdalmegedalfiky-ops/PhantomGuard/actions/workflows/ci.yml/badge.svg)
+![License](https://img.shields.io/badge/license-MIT-00D4B0)
+![Python](https://img.shields.io/badge/python-3.11%2B-3DA9FC)
 
 AI-powered SOAR pipeline يدمج Claude API مع Elasticsearch (ELK Stack) لاكتشاف سريع
 للـ alerts، تحليلها، واتخاذ قرار استجابة مناسب — مع safety-first design (dry-run افتراضي).
@@ -63,9 +67,21 @@ python -m soar_ai.cli run
 # يشغّل بشكل مستمر كل POLL_INTERVAL_SECONDS
 python -m soar_ai.cli run --loop
 
+# عايز تجرب الـ UI بسرعة من غير ES/Claude حقيقيين؟
+python -m soar_ai.cli seed-demo
+
+# يشغّل الـ SOC console (Flask dashboard) على http://localhost:5000
+python -m soar_ai.cli serve
+
 # Tests
 pytest tests/ -v
 ```
+
+## Dashboard (PhantomGuard Console)
+
+- **Filtering/search**: فلترة فورية بالـ severity والـ decision outcome، وبحث نصي بدون أي round-trip للسيرفر.
+- **Alert detail**: تحليل AI الكامل (summary + reasoning + classification)، MITRE ATT&CK chips، الـ decision rationale، وexecution log بستايل terminal.
+- مفيش auth دلوقتي - مصمم كـ MVP شخصي لمستخدم واحد.
 
 ## Roadmap (الخطوات الجاية)
 
