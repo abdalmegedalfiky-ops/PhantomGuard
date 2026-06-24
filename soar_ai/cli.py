@@ -111,6 +111,14 @@ def _process_alert(alert: NormalizedAlert) -> tuple[str, str]:
 
 
 @cli.command()
+@click.option("--count", default=5, help="عدد الـ demo alerts المطلوب توليدها")
+def seed_demo(count: int):
+    """يولّد reports تجريبية عشان تجرب الـ dashboard من غير ES/Claude حقيقيين."""
+    from soar_ai.seed_demo import seed
+    seed(count=count)
+
+
+@cli.command()
 @click.option("--port", default=5000, help="البورت اللي الداشبورد هيشتغل عليه")
 @click.option("--debug/--no-debug", default=True)
 def serve(port: int, debug: bool):

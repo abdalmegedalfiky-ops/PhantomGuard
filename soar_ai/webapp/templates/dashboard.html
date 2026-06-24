@@ -28,10 +28,31 @@
 
 <div class="section-heading">processed alerts</div>
 
+<div class="filterbar" id="filterbar">
+    <input type="text" id="searchInput" class="filterbar__search" placeholder="بحث برقم الـ alert أو اسم الـ rule...">
+    <div class="filterbar__group" data-filter-group="severity">
+        <button class="chip-filter is-active" data-value="all">الكل</button>
+        <button class="chip-filter" data-value="critical">critical</button>
+        <button class="chip-filter" data-value="high">high</button>
+        <button class="chip-filter" data-value="medium">medium</button>
+        <button class="chip-filter" data-value="low">low</button>
+    </div>
+    <div class="filterbar__group" data-filter-group="decision">
+        <button class="chip-filter is-active" data-value="all">كل القرارات</button>
+        <button class="chip-filter" data-value="AUTO_EXECUTE">auto</button>
+        <button class="chip-filter" data-value="ESCALATE_TO_ANALYST">escalated</button>
+        <button class="chip-filter" data-value="NO_ACTION">no action</button>
+    </div>
+</div>
+
 {% if reports %}
-<div class="alert-list">
+<div class="alert-list" id="alertList">
     {% for r in reports %}
-    <a class="alert-row" href="{{ url_for('alert_detail', report_id=r._id) }}">
+    <a class="alert-row"
+       href="{{ url_for('alert_detail', report_id=r._id) }}"
+       data-severity="{{ r.triage.severity }}"
+       data-decision="{{ r.decision.outcome }}"
+       data-search="{{ (r.alert.rule_name ~ ' ' ~ r.alert.alert_id)|lower }}">
         <span class="alert-row__time">{{ r.generated_at[11:16] }}</span>
         <span class="alert-row__rule">
             {{ r.alert.rule_name }}
@@ -46,9 +67,13 @@
     </a>
     {% endfor %}
 </div>
+<div class="empty" id="noResults" style="display:none;">مفيش alerts مطابقة للفلتر/البحث ده.</div>
 {% else %}
 <div class="empty">
-    مفيش alerts معالجة لسه. شغّل: <b>python -m soar_ai.cli run</b>
+    مفيش alerts معالجة لسه. شغّل: <b>python -m soar_ai.cli run</b><br>
+    أو جرّب: <b>python -m soar_ai.cli seed-demo</b> لبيانات تجريبية.
 </div>
 {% endif %}
+
+<script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 {% endblock %}
