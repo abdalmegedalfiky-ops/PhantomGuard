@@ -1,0 +1,10 @@
+name: isolate_host
+description: "يعزل الـ host عن الشبكة عبر EDR agent"
+required_fields: [host]
+steps:
+  - step: "log_intent"
+    detail: "تسجيل نية العزل"
+  - step: "call_edr_api"
+    detail: "استدعاء EDR (CrowdStrike/Defender/etc) - placeholder"
+  - step: "verify_isolation"
+    detail: "تأكيد عزل الجهاز"

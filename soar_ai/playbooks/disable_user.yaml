@@ -1,0 +1,10 @@
+name: disable_user
+description: "يعطّل حساب المستخدم في AD/IdP عند اشتباه compromise"
+required_fields: [user]
+steps:
+  - step: "log_intent"
+    detail: "تسجيل نية التعطيل"
+  - step: "call_idp_api"
+    detail: "استدعاء Active Directory / Azure AD / Okta API - placeholder"
+  - step: "verify_disabled"
+    detail: "تأكيد تعطيل الحساب"

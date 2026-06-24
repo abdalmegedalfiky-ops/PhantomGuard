@@ -1,0 +1,10 @@
+name: block_ip
+description: "يحظر IP عند الفايروول/EDR بناءً على source_ip في الـ alert"
+required_fields: [source_ip]
+steps:
+  - step: "log_intent"
+    detail: "تسجيل نية الحظر قبل التنفيذ الفعلي"
+  - step: "call_firewall_api"
+    detail: "استدعاء integration الفايروول الخاص بيك (Palo Alto / FortiGate / etc) - placeholder"
+  - step: "verify_block"
+    detail: "تأكيد أن الـ IP اتحظر فعلياً"
