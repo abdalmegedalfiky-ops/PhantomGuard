@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ r.alert.rule_name }} — SOAR-AI Console{% endblock %}
+{% block crumb %}alert / {{ r.alert.alert_id }}{% endblock %}
+
+{% block content %}
+<a class="back-link" href="{{ url_for('dashboard') }}">‹ رجوع للداشبورد</a>
+
+<div class="detail-header">
+    <h1 class="detail-header__rule">{{ r.alert.rule_name }}</h1>
+    <div class="detail-header__meta">
+        {{ r.alert.alert_id }} &nbsp;·&nbsp; {{ r.generated_at }} &nbsp;·&nbsp;
+        <span class="badge badge--{{ r.triage.severity }}">{{ r.triage.severity }}</span>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="panel">
+        <div class="section-heading">ai analysis</div>
+        <div class="console-block"><span class="prompt">&gt; summary</span>
+{{ r.triage.summary }}
+
+<span class="prompt">&gt; reasoning</span>
+{{ r.triage.reasoning }}
+
+<span class="prompt">&gt; classification</span>
+{{ r.triage.classification }}</div>
+
+        <div class="conf" style="margin-top:18px;">
+            <span class="conf__bar" style="width:140px;"><span class="conf__fill" style="width: {{ (r.triage.confidence * 100)|round|int }}%"></span></span>
+            <span class="conf__value">confidence {{ "%.2f"|format(r.triage.confidence) }}</span>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="section-heading">facts</div>
+        <ul class="facts">
+            <li><span class="k">host</span><span class="v">{{ r.alert.host or '—' }}</span></li>
+            <li><span class="k">source_ip</span><span class="v">{{ r.alert.source_ip or '—' }}</span></li>
+            <li><span class="k">destination_ip</span><span class="v">{{ r.alert.destination_ip or '—' }}</span></li>
+            <li><span class="k">user</span><span class="v">{{ r.alert.user or '—' }}</span></li>
+            <li><span class="k">timestamp</span><span class="v">{{ r.alert.timestamp }}</span></li>
+        </ul>
+
+        <div class="section-heading" style="margin-top:18px;">mitre att&amp;ck</div>
+        {% if r.alert.mitre_techniques %}
+        <div class="chips">
+            {% for m in r.alert.mitre_techniques %}
+            <span class="chip"><b>{{ m.technique_id }}</b> {{ m.technique_name }}</span>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="chip">مفيش تطابق MITRE واضح</div>
+        {% endif %}
+
+        <div class="section-heading" style="margin-top:18px;">decision</div>
+        <p class="dec dec--{{ r.decision.outcome|lower }}" style="font-size:14px; margin:0 0 6px;">{{ r.decision.outcome }}</p>
+        <p style="font-size:12.5px; color:var(--text-muted); margin:0;">{{ r.decision.rationale }}</p>
+
+        {% if r.decision.actions_to_execute %}
+        <ul class="actions-list">
+            {% for a in r.decision.actions_to_execute %}<li>{{ a }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</div>
+
+<div class="section-heading">execution log</div>
+<div class="panel">
+    {% if r.execution_logs %}
+    <div class="term">
+        {% for line in r.execution_logs %}
+        <div class="term__line">{{ line }}</div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty">مفيش تنفيذ — القرار كان {{ r.decision.outcome }}</div>
+    {% endif %}
+</div>
+{% endblock %}

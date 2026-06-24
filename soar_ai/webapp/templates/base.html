@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}SOAR-AI Console{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+    <a href="{{ url_for('dashboard') }}" class="topbar__brand">
+        <span class="topbar__mark">&gt;_</span> SOAR<span class="topbar__accent">-AI</span>
+        <span class="topbar__divider">›</span>
+        <span class="topbar__crumb">{% block crumb %}console{% endblock %}</span>
+    </a>
+    <span class="topbar__status"><span class="dot dot--live"></span>dry-run pipeline active</span>
+</header>
+<main class="shell">
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

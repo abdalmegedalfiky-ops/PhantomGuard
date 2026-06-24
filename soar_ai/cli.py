@@ -110,5 +110,16 @@ def _process_alert(alert: NormalizedAlert) -> tuple[str, str]:
     return decision.outcome.value, report_path.name
 
 
+@cli.command()
+@click.option("--port", default=5000, help="البورت اللي الداشبورد هيشتغل عليه")
+@click.option("--debug/--no-debug", default=True)
+def serve(port: int, debug: bool):
+    """يشغّل SOAR-AI Console (Flask dashboard) على http://localhost:<port>"""
+    from soar_ai.webapp.app import create_app
+    app = create_app()
+    console.print(f"[green]SOAR-AI Console شغّال على[/green] http://localhost:{port}")
+    app.run(debug=debug, port=port)
+
+
 if __name__ == "__main__":
     cli()

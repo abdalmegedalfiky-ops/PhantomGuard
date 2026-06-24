@@ -1,8 +1,13 @@
 """
 Report Generator: يبني تقرير Markdown منظم لكل alert اتعالج، يتسجّل في output_reports/.
 ده اللي بيوريك "ليه" الـ AI اتخذ القرار ده وبتاعمل audit trail.
+
+كل تقرير بيتسجّل بنسختين:
+  - .md  -> قراءة سريعة/يدوية
+  - .json -> ده اللي الـ dashboard (Flask) بيقرأ منه مباشرة
 """
 from __future__ import annotations
+import json
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any
@@ -22,7 +27,9 @@ def generate_report(
 ) -> Path:
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     alert_id = alert_context.get("alert_id", "unknown")
-    filename = OUTPUT_DIR / f"{ts}_{alert_id}.md"
+    base_name = f"{ts}_{alert_id}"
+    filename = OUTPUT_DIR / f"{base_name}.md"
+    json_filename = OUTPUT_DIR / f"{base_name}.json"
 
     mitre_lines = "\n".join(
         f"- `{m['technique_id']}` — {m['technique_name']}"
@@ -64,4 +71,26 @@ def generate_report(
 {exec_log_lines}
 """
     filename.write_text(content, encoding="utf-8")
+
+    json_payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "alert": alert_context,
+        "triage": {
+            "severity": triage.severity,
+            "classification": triage.classification,
+            "confidence": triage.confidence,
+            "summary": triage.summary,
+            "recommended_actions": triage.recommended_actions,
+            "reasoning": triage.reasoning,
+        },
+        "decision": {
+            "outcome": decision.outcome.value,
+            "actions_to_execute": decision.actions_to_execute,
+            "rationale": decision.rationale,
+        },
+        "execution_logs": execution_logs,
+        "report_md": filename.name,
+    }
+    json_filename.write_text(json.dumps(json_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
     return filename

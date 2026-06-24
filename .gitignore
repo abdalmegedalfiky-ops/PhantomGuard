@@ -5,3 +5,4 @@ __pycache__/
 *.db
 output_reports/*.md
 .DS_Store
+output_reports/*.json

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}SOAR-AI Console — Dashboard{% endblock %}
+{% block crumb %}dashboard{% endblock %}
+
+{% block content %}
+<div class="metrics">
+    <div class="metric">
+        <div class="metric__label">Total processed</div>
+        <div class="metric__value">{{ metrics.total }}</div>
+    </div>
+    <div class="metric">
+        <div class="metric__label">Critical</div>
+        <div class="metric__value metric__value--critical">{{ metrics.by_severity.get('critical', 0) }}</div>
+    </div>
+    <div class="metric">
+        <div class="metric__label">High</div>
+        <div class="metric__value metric__value--high">{{ metrics.by_severity.get('high', 0) }}</div>
+    </div>
+    <div class="metric">
+        <div class="metric__label">Auto-executed</div>
+        <div class="metric__value metric__value--auto">{{ metrics.by_decision.get('AUTO_EXECUTE', 0) }}</div>
+    </div>
+    <div class="metric">
+        <div class="metric__label">Avg. AI confidence</div>
+        <div class="metric__value">{{ "%.2f"|format(metrics.avg_confidence) }}</div>
+    </div>
+</div>
+
+<div class="section-heading">processed alerts</div>
+
+{% if reports %}
+<div class="alert-list">
+    {% for r in reports %}
+    <a class="alert-row" href="{{ url_for('alert_detail', report_id=r._id) }}">
+        <span class="alert-row__time">{{ r.generated_at[11:16] }}</span>
+        <span class="alert-row__rule">
+            {{ r.alert.rule_name }}
+            <span class="alert-id">{{ r.alert.alert_id }}</span>
+        </span>
+        <span class="badge badge--{{ r.triage.severity }}">{{ r.triage.severity }}</span>
+        <span class="dec dec--{{ r.decision.outcome|lower }}">{{ r.decision.outcome }}</span>
+        <span class="conf">
+            <span class="conf__bar"><span class="conf__fill" style="width: {{ (r.triage.confidence * 100)|round|int }}%"></span></span>
+            <span class="conf__value">{{ "%.2f"|format(r.triage.confidence) }}</span>
+        </span>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty">
+    مفيش alerts معالجة لسه. شغّل: <b>python -m soar_ai.cli run</b>
+</div>
+{% endif %}
+{% endblock %}
