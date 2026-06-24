@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}500 — Internal Error{% endblock %}
+{% block crumb %}error{% endblock %}
+{% block content %}
+<div class="empty" style="margin-top:60px;">
+    <div style="font-size:32px; margin-bottom:12px;">⚠️</div>
+    <div style="font-size:15px; color:var(--text-muted); margin-bottom:8px;">500 — Internal Server Error</div>
+    <div style="font-size:12px;">{{ error }}</div>
+    <a href="{{ url_for('dashboard') }}" class="back-link" style="margin-top:20px; display:inline-block;">‹ رجوع للداشبورد</a>
+</div>
+{% endblock %}

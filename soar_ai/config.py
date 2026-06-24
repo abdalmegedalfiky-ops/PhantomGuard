@@ -1,6 +1,8 @@
 """
 Centralized configuration loader for SOAR-AI.
 يقرأ كل القيم من البيئة (.env) — مفيش أي secret مكتوب هنا.
+
+ADDED: SLACK_WEBHOOK_URL لإرسال notifications لما يحصل ESCALATE_TO_ANALYST.
 """
 import os
 from dataclasses import dataclass
@@ -34,6 +36,9 @@ class Settings:
 
     # Polling
     poll_interval_seconds: int = int(os.getenv("POLL_INTERVAL_SECONDS", "60"))
+
+    # Notifications — اختياري. لو موجود، بيبعت Slack message لما يحصل ESCALATE_TO_ANALYST
+    slack_webhook_url: str | None = os.getenv("SLACK_WEBHOOK_URL") or None
 
     def validate(self) -> list[str]:
         """Returns a list of missing/invalid config problems (empty = OK)."""

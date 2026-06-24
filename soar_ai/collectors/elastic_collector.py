@@ -2,6 +2,9 @@
 Collector: يسحب alerts جديدة من Elasticsearch/Kibana Security alerts index.
 بيرجع شكل موحّد (normalized) عشان باقي الـ pipeline (enrichment/AI/decision) ميهمهوش
 شكل الـ raw document الأصلي.
+
+FIX: _normalize كانت بتستخدم src.get("kibana.alert.rule.name") وده بيدور على key
+اسمه بالنقط حرفياً - مش بيعمل nested lookup. اتعملت _dig() بدلها في كل الحقول.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field
@@ -68,14 +71,40 @@ def fetch_recent_alerts(lookback_minutes: int = 15, max_alerts: int = 50) -> lis
 
 
 def _normalize(doc_id: str, src: dict[str, Any]) -> NormalizedAlert:
-    """يطبّع حقول Kibana Security alert الشائعة. عدّل المسارات لو عندك schema مخصص."""
-    kibana_alert = src.get("kibana.alert", {}) if isinstance(src.get("kibana.alert"), dict) else {}
+    """
+    يطبّع حقول Kibana Security alert.
+
+    FIX: بدل src.get("kibana.alert.rule.name") اللي كانت دايمًا بترجع None،
+    بنستخدم _dig() في كل الحقول Nested عشان يعمل traversal صحيح على الـ dict.
+    Kibana بتحط الحقول إما nested (kibana -> alert -> rule -> name)
+    أو flat بالنقط ("kibana.alert.rule.name" key). بنجرب الاتنين.
+    """
+    # rule name: جرّب nested أولاً، بعدين flat key
+    rule_name = (
+        _dig(src, "kibana.alert.rule.name")
+        or src.get("kibana.alert.rule.name")  # flat key fallback
+        or "unknown_rule"
+    )
+
+    # severity: nested أو flat
+    severity = (
+        _dig(src, "kibana.alert.severity")
+        or src.get("kibana.alert.severity")
+        or "medium"
+    ).lower()
+
+    # description: reason أو message
+    description = (
+        _dig(src, "kibana.alert.reason")
+        or src.get("kibana.alert.reason")
+        or src.get("message", "")
+    )
 
     return NormalizedAlert(
         alert_id=doc_id,
-        rule_name=src.get("kibana.alert.rule.name") or kibana_alert.get("rule", {}).get("name", "unknown_rule"),
-        severity=(src.get("kibana.alert.severity") or "medium").lower(),
-        description=src.get("kibana.alert.reason") or src.get("message", ""),
+        rule_name=rule_name,
+        severity=severity,
+        description=description,
         host=_dig(src, "host.name"),
         source_ip=_dig(src, "source.ip"),
         destination_ip=_dig(src, "destination.ip"),
@@ -86,6 +115,11 @@ def _normalize(doc_id: str, src: dict[str, Any]) -> NormalizedAlert:
 
 
 def _dig(d: dict[str, Any], dotted_path: str) -> str | None:
+    """
+    يتنقل في nested dict باستخدام dotted path.
+    مثال: _dig(src, "kibana.alert.rule.name") يدور على src["kibana"]["alert"]["rule"]["name"].
+    بيرجع None لو أي segment مش موجود أو مش dict.
+    """
     cur: Any = d
     for part in dotted_path.split("."):
         if not isinstance(cur, dict) or part not in cur:

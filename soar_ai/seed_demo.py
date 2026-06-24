@@ -3,16 +3,27 @@ Seed Demo: يولّد reports تجريبية (JSON + Markdown) في output_repor
 ما يحتاج اتصال حقيقي بـ Elasticsearch أو Claude API - مفيد لتجربة الـ dashboard
 وعرضه بسرعة.
 
+FIX #1: alert_id كان دايمًا demo-001..005 وده كان يسبب:
+        - re-running يُعيد كتابة نفس الـ report files
+        - state_store.already_processed() يرفض معالجتهم تاني لو الـ IDs بتتكرر
+        دلوقتي بيستخدم timestamp + random suffix عشان كل run يطلع unique IDs.
+
+FIX #2: execution_logs لـ AUTO_EXECUTE كانت hardcoded strings -
+        دلوقتي بتستخدم execute_action الفعلي (dry-run mode) عشان تشوف الـ
+        playbook steps الحقيقية.
+
 تشغيل: python -m soar_ai.seed_demo
 """
 from __future__ import annotations
 import random
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from soar_ai.ai.triage_engine import TriageResult
-from soar_ai.decision.decision_engine import decide
+from soar_ai.decision.decision_engine import decide, DecisionOutcome
 from soar_ai.enrichment.mitre_mapper import map_alert_to_mitre
 from soar_ai.reports.report_generator import generate_report
+from soar_ai.actions.executor import execute_action
 
 _SCENARIOS = [
     dict(
@@ -27,7 +38,7 @@ _SCENARIOS = [
     dict(
         rule_name="Suspicious PowerShell Execution",
         description="Encoded PowerShell command spawned from Word process",
-        host="fin-laptop-12", source_ip=None, destination_ip="91.219.x.x", user="m.hassan",
+        host="fin-laptop-12", source_ip=None, destination_ip="91.219.28.45", user="m.hassan",
         severity="critical", classification="true_positive", confidence=0.88,
         summary="A Base64-encoded PowerShell command was launched as a child process of winword.exe, consistent with a malicious macro.",
         recommended_actions=["isolate_host", "escalate_to_analyst"],
@@ -54,7 +65,7 @@ _SCENARIOS = [
     dict(
         rule_name="Outbound Connection to Known C2 Domain",
         description="DNS query for a domain on threat-intel C2 blocklist from production host",
-        host="api-gw-02", source_ip="10.0.2.40", destination_ip="45.137.x.x", user=None,
+        host="api-gw-02", source_ip="10.0.2.40", destination_ip="45.137.65.132", user=None,
         severity="critical", classification="true_positive", confidence=0.93,
         summary="A production API gateway resolved and connected to a domain flagged on a current threat-intel C2 list.",
         recommended_actions=["isolate_host", "block_ip", "escalate_to_analyst"],
@@ -65,10 +76,17 @@ _SCENARIOS = [
 
 def seed(count: int = len(_SCENARIOS)) -> None:
     now = datetime.now(timezone.utc)
+    # FIX: prefix بـ timestamp عشان كل run يطلع IDs مختلفة
+    run_prefix = now.strftime("%H%M%S")
+
     for i, scenario in enumerate(_SCENARIOS[:count]):
         mitre = map_alert_to_mitre(scenario["rule_name"], scenario["description"])
+
+        # FIX: ID فريد في كل run - مش هيتكرر في state_store
+        alert_id = f"demo-{run_prefix}-{i+1:03d}"
+
         alert_context = {
-            "alert_id": f"demo-{i+1:03d}",
+            "alert_id": alert_id,
             "rule_name": scenario["rule_name"],
             "severity_raw": scenario["severity"],
             "description": scenario["description"],
@@ -90,15 +108,24 @@ def seed(count: int = len(_SCENARIOS)) -> None:
         )
 
         decision = decide(triage)
-        execution_logs = []
-        if decision.outcome.value == "AUTO_EXECUTE":
-            execution_logs = [
-                "[log_intent] تسجيل نية التنفيذ قبل أي أكشن فعلي",
-                f"DRY_RUN=true → مفيش تنفيذ فعلي. كان هيتنفذ: {decision.actions_to_execute}",
-            ]
+        execution_logs: list[str] = []
+
+        # FIX: استخدم execute_action الفعلي بدل hardcoded strings
+        # (بيشتغل في dry-run mode تلقائياً عشان DRY_RUN=true افتراضياً)
+        if decision.outcome == DecisionOutcome.AUTO_EXECUTE:
+            for action_name in decision.actions_to_execute:
+                try:
+                    result = execute_action(action_name, alert_context)
+                    execution_logs.extend(result.steps_log)
+                    if not result.success:
+                        execution_logs.append(
+                            f"⚠️ action '{action_name}' انتهى بـ success=False"
+                        )
+                except FileNotFoundError as exc:
+                    execution_logs.append(f"❌ {exc}")
 
         path = generate_report(alert_context, triage, decision, execution_logs)
-        print(f"✅ {path.name}")
+        print(f"✅ {path.name}  (id={alert_id})")
 
     print(f"\nتم توليد {min(count, len(_SCENARIOS))} demo reports في output_reports/")
     print("شغّل: python -m soar_ai.cli serve   ثم افتح http://localhost:5000")
